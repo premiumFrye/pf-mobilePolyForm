@@ -6,15 +6,18 @@ angular.module('pf-mobilePolyForm', [])
     // keep track of our input fields for jumping to the next
     var inputs = [],
     // any other methods declared in template for ng-keydown that we'll want called 
-      keydownFns = [];
+      keydownFns = [],
+      //submit our form when we mean to
+      formSubmit;
 
     return {
+      require: 'form',
       compile: function (tElement) {
         var formElements = tElement[0].elements;
-        Object.keys(formElements).forEach(function (elm) {
+        Object.keys(formElements).forEach(function (eNum) {
           // 
-          if (formElements[elm].nodeName === 'INPUT' || formElements[elm].nodeName === 'SELECT') {
-            var thisInput = angular.element(formElements[elm]);
+          if (formElements[eNum].nodeName === 'INPUT' || formElements[eNum].nodeName === 'SELECT') {
+            var thisInput = angular.element(formElements[eNum]);
             // if an input field doesn't already has a ng-keydown directive, add it and call 'nextInput' 
             if (!thisInput.attr('ng-keydown')) { inputs.push(thisInput.attr('ng-keydown', 'nextInput($event,' + inputs.length + ');')); }
             // if ng-keydown registers some other events, save them to call them back later
@@ -23,8 +26,8 @@ angular.module('pf-mobilePolyForm', [])
               inputs.push(thisInput.attr('ng-keydown', 'nextInput($event,' + inputs.length + ');'));
             }
           }
-          if (formElements[elm].nodeName === 'SELECT') {
-            var thisSelect = angular.element(formElements[elm])[0];
+          if (formElements[eNum].nodeName === 'SELECT') {
+            var thisSelect = angular.element(formElements[eNum])[0];
             // ng-model doesn't always update (browser discrepancies) and selected option doesn't always show as selected with certain browsers - throw a shim in there.
             thisSelect.onchange = function () {
               thisSelect.blur();
@@ -46,16 +49,22 @@ angular.module('pf-mobilePolyForm', [])
         });
         return {
 
-          post: function (scope) {
+          post: function (scope, elm, attr) {
+            angular.noop(elm);
+            formSubmit =  $parse(attr.ngSubmit);
             scope.nextInput = function (e, num) {
               // apply any functions user had attached to ng-keydown on input
-              if (keydownFns[num]) { keydownFns[num](scope, {$event: event}); }
+              if (keydownFns[num]) { keydownFns[num](scope, {$event: e}); }
               // event trigers $digest, but focus event wants to trigger $digest too: wrap in a $timeout and tell angular not to $digest (false option)
-              if (e.keyCode === 13) {
-                $timeout(function () {
-                // move cursor to next input field
-                  if (inputs[num + 1]) { inputs[num + 1][0].focus(); }
-                }, 0, false);
+              if (ionic.Platform.isAndroid()) {
+                if (e.keyCode === 13) {
+                  // if we're not on the last input, don't submit the form!                  
+                  if (inputs.length !== num) { e.preventDefault(); }
+                  $timeout(function () {
+                  // move cursor to next input field
+                    if (inputs[num + 1]) { inputs[num + 1][0].focus(); }
+                  }, 0, false);
+                }
               }
             };
           }

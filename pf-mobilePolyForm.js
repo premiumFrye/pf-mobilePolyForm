@@ -1,7 +1,7 @@
 /*global ionic*/
 
 // for example usage, see http://codepen.io/premiumfrye/pen/pJMOZe
-angular.module('pf-mobilePolyForm')
+angular.module('pf-mobilePolyForm', [])
   .directive('mobileFormPolyfill', function ($timeout, $parse) {
     // keep track of our input fields for jumping to the next
     var inputs = [],

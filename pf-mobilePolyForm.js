@@ -15,11 +15,9 @@ angular.module('pf-mobilePolyForm', [])
       };
 
     return {
-      require: 'form',
       compile: function (tElement) {
         var formElements = tElement[0].elements;
         Object.keys(formElements).forEach(function (eNum) {
-          // 
           if (formElements[eNum].nodeName === 'INPUT' || formElements[eNum].nodeName === 'SELECT') {
             var thisInput = angular.element(formElements[eNum]);
             // if an input field doesn't already has a ng-keydown directive, add it and call 'nextInput' 
@@ -31,10 +29,12 @@ angular.module('pf-mobilePolyForm', [])
             }
             if (formElements[eNum].nodeName === 'SELECT') {
               thisInput = thisInput[0];
-              // ng-model doesn't always update (browser discrepancies) and selected option doesn't always show as selected with certain browsers - throw a shim in there.
               thisInput.onchange = function () {
+              // ng-model doesn't always update (browser discrepancies) and selected option doesn't always show as selected with certain browsers - throw a shim in there.
                 thisInput.blur();
-                focusInput(parseInt(eNum) + 1);
+                if (ionic.Platform.isAndroid()) {
+                  focusInput(parseInt(eNum, 10) + 1);
+                }
               };
               // make android act like iOS - when user hits 'return' and focuses on a select field, emulate a mouse click and open up options
               if (ionic.Platform.isAndroid()) {
@@ -60,8 +60,8 @@ angular.module('pf-mobilePolyForm', [])
               // event trigers $digest, but focus event wants to trigger $digest too: wrap in a $timeout and tell angular not to $digest (false option)
               if (ionic.Platform.isAndroid()) {
                 if (e.keyCode === 13) {
-                  // if we're not on the last input, don't submit the form!                  
-                  if (inputs.length !== num) { e.preventDefault(); }
+                  // only submit the form when user it's return/ok on last input
+                  if (inputs.length !== num + 1) { e.preventDefault(); }
                   focusInput(num + 1);
                 }
               }
